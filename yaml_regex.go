@@ -56,6 +56,33 @@ func maskSecretKeys(input string, patterns []Pattern) string {
 	return input
 }
 
+// func maskSecretKeys(input string, patterns []Pattern) string {
+// 	// Create a single regex expression by combining multiple patterns
+// 	var regexExpressions []string
+// 	for _, pattern := range patterns {
+// 		regexExpressions = append(regexExpressions, pattern.Pattern.Regex)
+// 	}
+// 	combinedRegex := strings.Join(regexExpressions, "|")
+
+// 	// Compile the combined regex expression
+// 	regex, err := regexp.Compile(combinedRegex)
+// 	if err != nil {
+// 		fmt.Printf("Error compiling regex '%s': %v\n", combinedRegex, err)
+// 		return input
+// 	}
+
+// 	// Find all matches using the combined regex expression
+// 	matches := regex.FindAllStringIndex(input, -1)
+
+// 	// Replace the matched strings with asterisks
+// 	for _, match := range matches {
+// 		replacement := strings.Repeat("*", match[1]-match[0])
+// 		input = input[:match[0]] + replacement + input[match[1]:]
+// 	}
+
+// 	return input
+// }
+
 func main() {
 	patterns, err := readPatterns("patterns.yaml")
 	if err != nil {
