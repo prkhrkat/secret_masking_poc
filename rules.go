@@ -711,16 +711,26 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Call the function to mask secrets and print the masked output
+	maskedOutput := maskSecrets(&outBuf)
+	fmt.Println(maskedOutput)
+}
+
+func maskSecrets(input *bytes.Buffer) string {
 	// Create a scanner to read the buffer line by line
-	scanner := bufio.NewScanner(&outBuf)
+	scanner := bufio.NewScanner(input)
+	var maskedOutput string
+
 	for scanner.Scan() {
 		line := scanner.Text()
 		maskedString := MaskSecrets(line, builtinRules)
-		fmt.Println(maskedString)
+		maskedOutput += maskedString + "\n"
 	}
 
 	// Check for any scanning errors
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Error reading output: %v\n", err)
 	}
+
+	return maskedOutput
 }

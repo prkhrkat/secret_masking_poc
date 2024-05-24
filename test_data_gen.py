@@ -19,7 +19,7 @@ def generate_log_entry():
     return log_entry
 
 # Generate synthetic log data
-num_log_entries = 1000  # Adjust the number of log entries as needed
+num_log_entries = 100000  # Adjust the number of log entries as needed
 synthetic_log_data = "\n".join(generate_log_entry() for _ in range(num_log_entries))
 
 # Save the synthetic log data to a file
