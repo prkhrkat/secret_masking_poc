@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"regexp"
-	"strings"
 	"time"
 )
 
@@ -678,85 +678,86 @@ var BuiltinRules = []Rule{
 // MaskSecrets takes an input string and masks any secrets found based on the provided rules
 func MaskSecretsOnString(input string, rules []Rule) string {
 	maskedInput := input
-	fmt.Println(maskedInput)
 
 	for _, rule := range rules {
-		matches := rule.Regex.FindAllStringSubmatchIndex(maskedInput, -1)
-		if matches == nil {
-			continue
-		}
+		maskedInput = rule.Regex.ReplaceAllString(maskedInput, "******")
 
-		for _, match := range matches {
-			secretStart := match[2*rule.Regex.SubexpIndex(rule.SecretGroupName)]
-			secretEnd := match[2*rule.Regex.SubexpIndex(rule.SecretGroupName)+1]
-			if secretStart >= 0 && secretEnd >= 0 {
-				maskedInput = maskedInput[:secretStart] + strings.Repeat("*", secretEnd-secretStart) + maskedInput[secretEnd:]
-			}
-		}
 	}
-
 	return maskedInput
 }
 
 func main() {
 	// Create a new command to execute `cat` to read the file
-	// cmd := exec.Command("cat", "synthetic_log_data.txt")
+	cmd := exec.Command("cat", "message.txt")
 
-	// // Create a buffer to capture the command's stdout
+	// Create a buffer to capture the command's stdout
+	var outBuf bytes.Buffer
+	outBuf.Grow(100) // Set the maximum token size to 4096 bytes
+	cmd.Stdout = &outBuf
+	cmd.Stderr = os.Stderr
+
+	// Run the command
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Command execution failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Read the file
+	// file, err := os.Open("message.txt")
+	// if err != nil {
+	// 	fmt.Printf("Error opening file: %v\n", err)
+	// 	os.Exit(1)
+	// }
+	// defer file.Close()
+	// // timer to measure the time taken to mask the secrets
+	start := time.Now()
+
+	// // Create a buffer to capture the file's content
 	// var outBuf bytes.Buffer
-	// cmd.Stdout = &outBuf
-	// cmd.Stderr = os.Stderr
-
-	// // Run the command
-	// if err := cmd.Run(); err != nil {
-	// 	fmt.Printf("Command execution failed: %v\n", err)
+	// _, err = io.Copy(&outBuf, file)
+	// if err != nil {
+	// 	fmt.Printf("Error reading file: %v\n", err)
 	// 	os.Exit(1)
 	// }
 
-	// Read the file
-	file, err := os.Open("message.txt")
-	if err != nil {
-		fmt.Printf("Error opening file: %v\n", err)
-		os.Exit(1)
-	}
-	defer file.Close()
-	// timer to measure the time taken to mask the secrets
-	start := time.Now()
-
-	// Create a buffer to capture the file's content
-	var outBuf bytes.Buffer
-	_, err = io.Copy(&outBuf, file)
-	if err != nil {
-		fmt.Printf("Error reading file: %v\n", err)
-		os.Exit(1)
-	}
-
 	end_read := time.Now()
 
+	buf := new(bytes.Buffer)
+	maskedStream := MaskSecretsStream(&outBuf)
+	_, err := buf.ReadFrom(maskedStream)
+	if err != nil {
+		fmt.Printf("Error reading from masked stream: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(buf.String())
 	// Call the function to mask secrets and print the masked output
-	maskedOutput := MaskSecretsStream(&outBuf)
+
 	end_mask := time.Now()
 
-	fmt.Println(maskedOutput)
 	fmt.Println("Time taken to read the file: ", end_read.Sub(start))
 	fmt.Println("Time taken to mask the secrets: ", end_mask.Sub(end_read))
 }
 
-func MaskSecretsStream(input *bytes.Buffer) string {
-	// Create a scanner to read the buffer line by line
-	scanner := bufio.NewScanner(input)
-	var maskedOutput string
+func MaskSecretsStream(input *bytes.Buffer) io.Reader {
+	// Create a pipe to connect the writer and reader
+	pr, pw := io.Pipe()
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		maskedString := MaskSecretsOnString(line, BuiltinRules)
-		maskedOutput += maskedString + "\n"
-	}
+	// Start a goroutine to read from input buffer, mask secrets, and write to the pipe
+	go func() {
+		defer pw.Close()
+		scanner := bufio.NewScanner(input)
+		const maxCapacity int = 10000000 // your required line length
+		buf := make([]byte, maxCapacity)
+		scanner.Buffer(buf, maxCapacity)
+		for scanner.Scan() {
+			line := scanner.Text()
+			maskedString := MaskSecretsOnString(line, BuiltinRules)
+			pw.Write([]byte(maskedString + "\n"))
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Printf("Error reading input: %v\n", err)
+		}
+	}()
 
-	// Check for any scanning errors
-	if err := scanner.Err(); err != nil {
-		fmt.Printf("Error reading output: %v\n", err)
-	}
-
-	return maskedOutput
+	return pr
 }

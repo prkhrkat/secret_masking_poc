@@ -14,7 +14,7 @@ import (
 func BenchmarkSecrets(b *testing.B) {
 	b.N = 100000
 	for i := 0; i < b.N; i++ {
-		main.MaskSecretsOnString("This is a log entry with a secret_key=9JHQpcS6HLVI8NyiMNsIRyLCw15lRQ", secret.BuiltinRules)
+		main.MaskSecretsOnString("This is a log entry with a secret_key=9JHQpcS6HLVI8NyiMNsIRyLCw15lRQ", main.BuiltinRules)
 	}
 }
 
