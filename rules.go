@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"os"
-	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // Reusable regex patterns
@@ -30,7 +31,7 @@ type Rule struct {
 	Keywords        []string
 }
 
-var builtinRules = []Rule{
+var BuiltinRules = []Rule{
 	{
 		ID:              "aws-access-key-id",
 		Severity:        "CRITICAL",
@@ -675,8 +676,9 @@ var builtinRules = []Rule{
 }
 
 // MaskSecrets takes an input string and masks any secrets found based on the provided rules
-func MaskSecrets(input string, rules []Rule) string {
+func MaskSecretsOnString(input string, rules []Rule) string {
 	maskedInput := input
+	fmt.Println(maskedInput)
 
 	for _, rule := range rules {
 		matches := rule.Regex.FindAllStringSubmatchIndex(maskedInput, -1)
@@ -698,32 +700,56 @@ func MaskSecrets(input string, rules []Rule) string {
 
 func main() {
 	// Create a new command to execute `cat` to read the file
-	cmd := exec.Command("cat", "synthetic_log_data.txt")
+	// cmd := exec.Command("cat", "synthetic_log_data.txt")
 
-	// Create a buffer to capture the command's stdout
+	// // Create a buffer to capture the command's stdout
+	// var outBuf bytes.Buffer
+	// cmd.Stdout = &outBuf
+	// cmd.Stderr = os.Stderr
+
+	// // Run the command
+	// if err := cmd.Run(); err != nil {
+	// 	fmt.Printf("Command execution failed: %v\n", err)
+	// 	os.Exit(1)
+	// }
+
+	// Read the file
+	file, err := os.Open("message.txt")
+	if err != nil {
+		fmt.Printf("Error opening file: %v\n", err)
+		os.Exit(1)
+	}
+	defer file.Close()
+	// timer to measure the time taken to mask the secrets
+	start := time.Now()
+
+	// Create a buffer to capture the file's content
 	var outBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = os.Stderr
-
-	// Run the command
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Command execution failed: %v\n", err)
+	_, err = io.Copy(&outBuf, file)
+	if err != nil {
+		fmt.Printf("Error reading file: %v\n", err)
 		os.Exit(1)
 	}
 
+	end_read := time.Now()
+
 	// Call the function to mask secrets and print the masked output
-	maskedOutput := maskSecrets(&outBuf)
+	maskedOutput := MaskSecretsStream(&outBuf)
+	end_mask := time.Now()
+
 	fmt.Println(maskedOutput)
+	fmt.Println("Time taken to read the file: ", end_read.Sub(start))
+	fmt.Println("Time taken to mask the secrets: ", end_mask.Sub(end_read))
 }
 
-func maskSecrets(input *bytes.Buffer) string {
+func MaskSecretsStream(input *bytes.Buffer) string {
 	// Create a scanner to read the buffer line by line
 	scanner := bufio.NewScanner(input)
 	var maskedOutput string
 
 	for scanner.Scan() {
 		line := scanner.Text()
-		maskedString := MaskSecrets(line, builtinRules)
+		maskedString := MaskSecretsOnString(line, BuiltinRules)
 		maskedOutput += maskedString + "\n"
 	}
 
