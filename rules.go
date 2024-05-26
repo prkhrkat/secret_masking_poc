@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -692,7 +693,6 @@ func main() {
 
 	// Create a buffer to capture the command's stdout
 	var outBuf bytes.Buffer
-	outBuf.Grow(100) // Set the maximum token size to 4096 bytes
 	cmd.Stdout = &outBuf
 	cmd.Stderr = os.Stderr
 
@@ -746,7 +746,7 @@ func MaskSecretsStream(input *bytes.Buffer) io.Reader {
 	go func() {
 		defer pw.Close()
 		scanner := bufio.NewScanner(input)
-		const maxCapacity int = 10000000 // your required line length
+		const maxCapacity int = 256 * 1024 // 256KB
 		buf := make([]byte, maxCapacity)
 		scanner.Buffer(buf, maxCapacity)
 		for scanner.Scan() {
@@ -754,8 +754,23 @@ func MaskSecretsStream(input *bytes.Buffer) io.Reader {
 			maskedString := MaskSecretsOnString(line, BuiltinRules)
 			pw.Write([]byte(maskedString + "\n"))
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Printf("Error reading input: %v\n", err)
+
+		if err := scanner.Err(); err == bufio.ErrTooLong {
+			// scan the stream with fixed buffer size and convert that data into line
+			for {
+				n, err := input.Read(buf)
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					log.Fatal(err) // handle error appropriately
+				}
+				line := string(buf[:n])
+				maskedString := MaskSecretsOnString(line, BuiltinRules)
+				pw.Write([]byte(maskedString + "\n"))
+			}
+		} else if err != nil {
+			log.Fatal(err) // handle other errors appropriately
 		}
 	}()
 
