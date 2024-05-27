@@ -1,0 +1,74 @@
+2023-05-24 10:15:33 [DEBUG] AWS Secret Access Key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+ASIAIVZZF5WVGTXTJ2TQ
+ASIAJAZ4HRG3CPA63XEQ
+ASIAJGGB7IYTTL53QNBQ
+ASIAJZ3DXJKMP7MG3EKA
+ASIAIQAP7NCOV4IOP6HQ
+ASIAISJIZDYHNH3YZ4PA
+ASIAIQKNVCOQF4IQDSFQ
+ASIAJCVIKK2Z6PAUBDEQ 2023-05-24 10:15:32 [INFO] Initializing AWS SDK with access key AKIAASIAJLVYNHUWCPKOPSYQ ASIAIVZZF5WVGTXTJ2TQ
+2023-05-24 10:15:33 [DEBUG] AWS Secret Access Key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+2023-05-24 10:15:34 [INFO] Listing S3 buckets for account 1234567890
+2023-05-24 10:15:35 [ERROR] Failed to fetch GitHub repository: Invalid credentials
+2023-05-24 10:15:36 [WARNING] GitHub Personal Access Token: ghp_1234567890abcdefghijklmnopqrstuvwx ASIAIVZZF5WVGTXTJ2TQ
+2023-05-24 10:15:37 [INFO] Cloning GitHub repository: https://github.com/user/repo.git
+2023-05-24 10:15:38 [DEBUG] AWS Session Token: AQoDYXdzEPYBASIAJLVYNHUWCPKOPSYQ
+2023-05-24 10:15:39 [INFO] Uploading artifacts to S3 bucket: my-app-artifacts ASIAIVZZF5WVGTXTJ2TQ
+2023-05-24 10:15:40 [ERROR] GitHub API rate limit exceeded: Retry-After: 60
+2023-05-24 10:15:41 [WARNING] GitHub OAuth Token: ghp_abcdefghijklmnopqrstuvwxyz012345 ASIAIVZZF5WVGTXTJ2TQ
+2023-05-24 10:15:42 [INFO] Fetching latest release from GitHub repository
+2023-05-24 10:15:43 [DEBUG] AWS Access Key ID: ASIAJLVYNHUWCPKOPSYQ ASIAIVZZF5WVGTXTJ2TQ
+2023-05-24 10:15:44 [INFO] Downloading dependencies from S3 bucket: my-app-dependencies
+2023-05-24 10:15:45 [ERROR] Invalid AWS credentials: The security token included in the request is invalid
+2023-05-24 10:15:46 [WARNING] Redacted AWS Secret Access Key: ASIAJLVYNHUWCPKOPSYQEXAMPLE
+
+ASIAY34FZKBOKMUTVV7A
+2023-05-24 10:15:47 [INFO] Successfully deployed application to AWS Lambda
+aws sts get-access-key-info --access-key-id ASIAY34FZKBNKMUTVV7A --query Account
+"609629065306"
+
+	base10 := "0123456789"
+	base32AwsFlavour := "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+
+	offsetStr, _ := baseconv.Convert("QAAAAAAA", base32AwsFlavour, base10)
+	offset, _ := strconv.Atoi(offsetStr)
+
+	offsetAccountIdStr, _ := baseconv.Convert(accessKeyId[4:12], base32AwsFlavour, base10)
+	offsetAccountId, _ := strconv.Atoi(offsetAccountIdStr)
+
+	accountId := 2 * (offsetAccountId - offset)
+
+	if strings.Index(base32AwsFlavour, accessKeyId[12:13]) >= strings.Index(base32AwsFlavour, "Q") {
+		accountId++
+	}
+
+	return fmt.Sprintf("%012d", accountId), nil
+}
+
+func main() {	
+	fmt.Println(getAccessKeyInfo("ASIAY34FZKBOKMUTVV7A"))
+
+    ASIAJLVYNHUWCPKOPSYQ
+ASIAJ73N6GYZRLJCM52Q
+ASIAIVZZF5WVGTXTJ2TQ
+ASIAJAZ4HRG3CPA63XEQ
+ASIAJGGB7IYTTL53QNBQ
+ASIAJZ3DXJKMP7MG3EKA
+ASIAIQAP7NCOV4IOP6HQ
+ASIAISJIZDYHNH3YZ4PA
+ASIAIQKNVCOQF4IQDSFQ
+ASIAJCVIKK2Z6PAUBDEQ
+
+DcCc9H6oCkGUSp3Rhmsx8NIfVG8kO2T/3jORxuZY
+Rh30BNyj+qNI4ftYRteoZbHJ3X4Ln71QtZkRXzJ9
+pARhvm1GmHyvLydUtFNCCMIIu4VEyaZNo9MbR3IJ
+XKeL0CrwNSoa1li5b9iWEi6wxI2EsQoj0A/hTDnq
+JO87AJYekC6mYhZ32zLDkRmxqlPGfJi9Wyx6E5AB
+MKNeSIXumjpUUHXhvz97exACdQ2gYp1TpQZc5jaq
+SyoEbmT4AUdbcXhdsG4KWr2yGS/9BDXPs4qHbamI
+FTNBND5Q6mQyH6xGEe27V0Pce/03EShqVZTTsLzF
+ndaHWM5h16/sgQTPNwjuRrq6HHdBwtQ+HpZ75V/F
+mgJteE7dZgSLC2eo2vKsAUWRSnchrWzCRnoDpUSJ
+ghpafafkaeffe
+
+

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -689,7 +688,7 @@ func MaskSecretsOnString(input string, rules []Rule) string {
 
 func main() {
 	// Create a new command to execute `cat` to read the file
-	cmd := exec.Command("cat", "message.txt")
+	cmd := exec.Command("cat", "/Users/prakhar/work/secret_masking_poc/empty_lines.log")
 
 	// Create a buffer to capture the command's stdout
 	var outBuf bytes.Buffer
@@ -723,10 +722,14 @@ func main() {
 	end_read := time.Now()
 
 	buf := new(bytes.Buffer)
-	maskedStream := MaskSecretsStream(&outBuf)
-	_, err := buf.ReadFrom(maskedStream)
+	maskedStream, err := MaskSecretsStream(&outBuf)
 	if err != nil {
-		fmt.Printf("Error reading from masked stream: %v\n", err)
+		fmt.Printf("Error masking secrets: %v\n", err)
+		os.Exit(1)
+	}
+	_, er := buf.ReadFrom(maskedStream)
+	if er != nil {
+		fmt.Printf("Error reading from masked stream: %v\n", er)
 		os.Exit(1)
 	}
 	fmt.Println(buf.String())
@@ -738,41 +741,59 @@ func main() {
 	fmt.Println("Time taken to mask the secrets: ", end_mask.Sub(end_read))
 }
 
-func MaskSecretsStream(input *bytes.Buffer) io.Reader {
-	// Create a pipe to connect the writer and reader
+func MaskSecretsStream(input *bytes.Buffer) (io.Reader, error) {
 	pr, pw := io.Pipe()
 
-	// Start a goroutine to read from input buffer, mask secrets, and write to the pipe
 	go func() {
 		defer pw.Close()
 		scanner := bufio.NewScanner(input)
 		const maxCapacity int = 256 * 1024 // 256KB
 		buf := make([]byte, maxCapacity)
 		scanner.Buffer(buf, maxCapacity)
+
 		for scanner.Scan() {
 			line := scanner.Text()
-			maskedString := MaskSecretsOnString(line, BuiltinRules)
-			pw.Write([]byte(maskedString + "\n"))
+			if len(line) == 0 {
+				_, err := pw.Write([]byte("\n"))
+				if err != nil {
+					// handle error appropriately
+					return
+				}
+			} else {
+				maskedString := MaskSecretsOnString(line, BuiltinRules)
+				_, err := pw.Write([]byte(maskedString + "\n"))
+				if err != nil {
+					// handle error appropriately
+					return
+				}
+			}
 		}
 
-		if err := scanner.Err(); err == bufio.ErrTooLong {
-			// scan the stream with fixed buffer size and convert that data into line
-			for {
-				n, err := input.Read(buf)
-				if err != nil {
-					if err == io.EOF {
-						break
+		if err := scanner.Err(); err != nil {
+			if err == bufio.ErrTooLong {
+				for {
+					n, err := input.Read(buf)
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+						// handle error appropriately
+						return
 					}
-					log.Fatal(err) // handle error appropriately
+					line := string(buf[:n])
+					maskedString := MaskSecretsOnString(line, BuiltinRules)
+					_, err = pw.Write([]byte(maskedString + "\n"))
+					if err != nil {
+						// handle error appropriately
+						return
+					}
 				}
-				line := string(buf[:n])
-				maskedString := MaskSecretsOnString(line, BuiltinRules)
-				pw.Write([]byte(maskedString + "\n"))
+			} else {
+				// handle other errors appropriately
+				return
 			}
-		} else if err != nil {
-			log.Fatal(err) // handle other errors appropriately
 		}
 	}()
 
-	return pr
+	return pr, nil
 }
