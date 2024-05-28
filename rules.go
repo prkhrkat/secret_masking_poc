@@ -687,19 +687,27 @@ func MaskSecretsOnString(input string, rules []Rule) string {
 }
 
 func main() {
+
 	// Create a new command to execute `cat` to read the file
-	cmd := exec.Command("cat", "/Users/prakhar/work/secret_masking_poc/empty_lines.log")
+	// cmd := exec.Command("cat", "/Users/prakhar/work/secret_masking_poc/log.log")
+	//cmd := exec.Command("echo", "ASIAIQAP7NCOV4IOP6HQ")
+	cmd := exec.Command("/bin/sh", "-c", "docker build -t masking -f /Users/prakhar/work/secret_masking_poc/Dockerfile  /Users/prakhar/work/secret_masking_poc --progress plain")
 
 	// Create a buffer to capture the command's stdout
-	var outBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = os.Stderr
+	//var outBuf bytes.Buffer
+	//cmd.Stdout = &outBuf
+	//cmd.Stderr = os.Stderr
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Printf("Command execution failed: %v\n", err)
+	}
 
 	// Run the command
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Command execution failed: %v\n", err)
-		os.Exit(1)
-	}
+	//if err := cmd.Run(); err != nil {
+	//	fmt.Printf("Command execution failed: %v\n", err)
+	//	os.Exit(1)
+	//}
 
 	// Read the file
 	// file, err := os.Open("message.txt")
@@ -721,15 +729,17 @@ func main() {
 
 	end_read := time.Now()
 
+	outBuf := bytes.NewBuffer(output)
+
 	buf := new(bytes.Buffer)
-	maskedStream, err := MaskSecretsStream(&outBuf)
+	maskedStream, err := MaskSecretsStream(outBuf)
 	if err != nil {
 		fmt.Printf("Error masking secrets: %v\n", err)
 		os.Exit(1)
 	}
-	_, er := buf.ReadFrom(maskedStream)
-	if er != nil {
-		fmt.Printf("Error reading from masked stream: %v\n", er)
+
+	if _, err := io.Copy(buf, maskedStream); err != nil {
+		fmt.Printf("Error reading masked stream: %v\n", err)
 		os.Exit(1)
 	}
 	fmt.Println(buf.String())
@@ -740,12 +750,13 @@ func main() {
 	fmt.Println("Time taken to read the file: ", end_read.Sub(start))
 	fmt.Println("Time taken to mask the secrets: ", end_mask.Sub(end_read))
 }
-
 func MaskSecretsStream(input *bytes.Buffer) (io.Reader, error) {
 	pr, pw := io.Pipe()
 
 	go func() {
-		defer pw.Close()
+		defer func() {
+			pw.Close()
+		}()
 		scanner := bufio.NewScanner(input)
 		const maxCapacity int = 256 * 1024 // 256KB
 		buf := make([]byte, maxCapacity)
@@ -794,6 +805,5 @@ func MaskSecretsStream(input *bytes.Buffer) (io.Reader, error) {
 			}
 		}
 	}()
-
 	return pr, nil
 }

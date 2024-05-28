@@ -1,4 +1,4 @@
-module main
+module secret
 
 go 1.22.3
 

@@ -1,23 +1,12 @@
-# Start from the latest golang base image
-FROM golang:latest
+# Use a minimal base image
+FROM alpine:latest
 
-# Set the Current Working Directory inside the container
-WORKDIR /app
+# Create a file with dummy secret keys
+RUN echo "secret_key=ASIAJ73N6GYZRLJCM52Q" > /dummy_secrets.txt && \
+    echo "api_token=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A" >> /dummy_secrets.txt
 
-# Copy go mod and sum files
-COPY go.mod go.sum ./
+RUN echo "ASIAIQAP7NCOV4IOP6HQ"
+# Print the contents of the file during the build
+RUN cat /dummy_secrets.txt
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
-RUN go mod download
-
-# Copy the source from the current directory to the Working Directory inside the container
-COPY . .
-
-# Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o secret .
-
-# This container exposes port 8080 to the outside world
-EXPOSE 8080
-
-# Run the tests with the benchmark option
-CMD ["go", "test", "-bench=."]
+RUN cp /dummy_secres.txt . 
