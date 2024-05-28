@@ -8,3 +8,4 @@ RUN echo "secret_key=ASIAJ73N6GYZRLJCM52Q" > /dummy_secrets.txt && \
 RUN echo "ASIAIQAP7NCOV4IOP6HQ"
 # Print the contents of the file during the build
 RUN cat /dummy_secrets.txt
+RUN cp /dummy_secres.txt . 
