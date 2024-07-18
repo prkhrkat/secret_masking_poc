@@ -1,6 +1,7 @@
 import random
 import string
 
+
 # List of secret key prefixes
 secret_key_prefixes = ['secret_key', 'access_token', 'api_key']
 
